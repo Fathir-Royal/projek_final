@@ -1,59 +1,165 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# MOTORMAX WMS
+**Workshop Management System - Khusus Bengkel Motor Modern**
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sistem manajemen gudang & sparepart berbasis web yang dirancang **khusus untuk bengkel motor**
 
-## About Laravel
+## Daftar Isi
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- [Tentang Proyek](#tentang-proyek)
+- [Fitur Utama](#fitur-utama)
+- [Teknologi](#teknologi)
+- [Instalasi & Setup](#instalasi--setup)
+- [Hak Akses (Role)](#hak-akses-role)
+- [Akun Demo](#akun-demo)
+- [Credits](#credits)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Tentang Proyek
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+**MOTORMAX WMS** adalah solusi all-in-one buat kamu yang:
+- Punya ribuan sparepart (oli, ban, kampas rem, velg, shockbreaker, dll)
+- Mau stok selalu akurat & anti-selisih
+- Butuh sistem approval biar tidak sembarangan keluar-masuk barang
+- Ingin bengkel terlihat profesional & kekinian
 
-## Learning Laravel
+Sistem ini menerapkan **Multi-Role Access Control** + **Approval Workflow** ketat, sehingga setiap transaksi terkontrol dengan baik.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+---
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Fitur Utama
 
-## Laravel Sponsors
+### 1. Multi-Role Access Control
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+| Role | Email (demo) | Hak Akses Utama |
+|------|--------------|-----------------|
+| **Admin** | `admin@motormax.com` | Full access: user, kategori, semua data |
+| **Manager Bengkel** | `manager@motormax.com` | Approve transaksi, buat PO restock, laporan |
+| **Staff / Mekanik** | `staff@motormax.com` | Input transaksi (pending), tambah sparepart |
+| **Supplier** | `supplier@motormax.com` | Terima & konfirmasi PO restock |
 
-### Premium Partners
+### 2. Manajemen Stok Bengkel
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+- Real-time update stok setelah transaksi di-approve
+- Low Stock Alert (visual kuning + merah di dashboard)
+- Kategori lengkap: Oli, Ban, Rem, Mesin, Aksesoris, dll
+- Foto + deskripsi teknis setiap sparepart
 
-## Contributing
+### 3. Transaksi Aman & Anti-Selisih
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+- Staff input → Manager approve → stok berubah
+- Bisa input banyak item sekaligus dalam 1 transaksi
+- Sistem otomatis blokir jika stok tidak cukup
 
-## Code of Conduct
+### 4. Restock / Purchase Order (PO)
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+**Alur lengkap:**
 
-## Security Vulnerabilities
+```
+Pending → Confirmed (oleh Supplier) → Shipped → Received (stok otomatis +)
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Supplier punya portal sendiri untuk konfirmasi/tolak PO.
 
-## License
+### 5. Desain Racing Modern
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- Tema hitam metalik + merah racing + kuning oli
+- Glassmorphism + efek hover agresif
+- 100% responsif — bisa dipakai di tablet/PC di bengkel
+
+---
+
+## Teknologi
+
+### Teknologi yang Digunakan
+
+- **Framework:** Laravel 11
+- **Database:** MySQL
+- **Frontend:** Blade + Tailwind CSS (Tema MOTORMAX Racing)
+- **Authentication:** Laravel Breeze
+
+---
+
+## Instalasi & Setup
+
+### Cara Instalasi (Lokal)
+
+```bash
+# 1. Clone repo
+git clone https://github.com/username/motormax-wms.git
+cd motormax-wms
+
+# 2. Install dependensi
+composer install
+npm install
+
+# 3. Setup .env
+cp .env.example .env
+php artisan key:generate
+
+# 4. Migrasi + Seeder (penting! ada akun default)
+php artisan migrate:fresh --seed
+
+# 5. Jalankan
+npm run dev
+# Terminal baru
+php artisan serve
+```
+
+**Buka → http://localhost:8000**
+
+---
+
+## Hak Akses (Role)
+
+### Admin
+- Full access: user, kategori, semua data
+
+### Manager Bengkel
+- Approve transaksi, buat PO restock, laporan
+
+### Staff / Mekanik
+- Input transaksi (pending), tambah sparepart
+
+### Supplier
+- Terima & konfirmasi PO restock
+
+---
+
+## Akun Demo
+
+### Akun Demo (Default Seeder)
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@motormax.com | password |
+| Manager Bengkel | manager@motormax.com | password |
+| Staff / Mekanik | staff@motormax.com | password |
+| Supplier | supplier@motormax.com | password |
+
+---
+
+## Aturan Bisnis
+
+### Hapus Sparepart
+→ Tidak boleh jika masih ada stok
+
+### Edit Transaksi
+→ Hanya yang status *Pending*
+
+### Approval
+→ Hanya Manager yang bisa mengubah stok
+
+### Restock
+→ Supplier hanya bisa *Confirm / Reject*, tidak bisa edit isi PO
+
+---
+
+## Credits
+
+Dikembangkan untuk **Tugas Final / Proyek Akhir** mata kuliah Pemrograman Web 2025
+
+Tema racing & UI oleh kamu — bengkel jadi kelihatan pro!
+
+---
+
+## MOTORMAX WMS
+**Karena bengkel motor keren juga butuh sistem yang keren!**

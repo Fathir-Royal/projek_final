@@ -1,0 +1,105 @@
+<x-app-layout>
+    <div class="min-h-screen bg-gradient-to-br from-[#0f0f0f] via-[#111111] to-[#1a1a1a] text-gray-100">
+        <div class="py-10">
+            <div class="max-w-5xl mx-auto px-6 lg:px-8">
+                <div class="mb-8 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-4xl font-black uppercase text-[#facc15]">Transaksi Stok Baru</h2>
+                        <p class="text-gray-400">Catat barang masuk/keluar</p>
+                    </div>
+                    <a href="{{ route('transactions.index') }}" class="px-6 py-3 bg-[#374151] hover:bg-[#4b5563] text-[#facc15] font-bold rounded-lg">Batal</a>
+                </div>
+
+                <div class="backdrop-blur-lg bg-[#1f2937]/90 border border-[#374151] rounded-2xl shadow-2xl p-8">
+                    <form method="POST" action="{{ route('transactions.store') }}">
+                        @csrf
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                            <div>
+                                <label class="block text-sm uppercase text-[#facc15] font-bold mb-2">Tipe</label>
+                                <select name="type" id="type" onchange="toggleType()" class="w-full bg-[#111111] border border-[#374151] focus:border-[#facc15] rounded-lg py-3 px-4" required>
+                                    <option value="incoming" {{ old('type','incoming')=='incoming'?'selected':'' }}>BARANG MASUK</option>
+                                    <option value="outgoing" {{ old('type')=='outgoing'?'selected':'' }}>BARANG KELUAR</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm uppercase text-[#facc15] font-bold mb-2">Tanggal</label>
+                                <input type="date" name="transaction_date" value="{{ old('transaction_date', date('Y-m-d')) }}" class="w-full bg-[#111111] border border-[#374151] focus:border-[#facc15] rounded-lg py-3 px-4" required>
+                            </div>
+                            <div id="supplier_field">
+                                <label class="block text-sm uppercase text-[#facc15] font-bold mb-2">Supplier</label>
+                                <select name="supplier_id" class="w-full bg-[#111111] border border-[#374151] focus:border-[#facc15] rounded-lg py-3 px-4">
+                                    <option value="">-- Pilih --</option>
+                                    @foreach($suppliers as $supplier)
+                                        <option value="{{ $supplier->id }}" {{ old('supplier_id')==$supplier->id?'selected':'' }}>{{ $supplier->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div id="customer_field" class="hidden">
+                                <label class="block text-sm uppercase text-[#facc15] font-bold mb-2">Pelanggan</label>
+                                <input type="text" name="customer_name" class="w-full bg-[#111111] border border-[#374151] focus:border-[#facc15] rounded-lg py-3 px-4" placeholder="Servis Pak Budi">
+                            </div>
+                        </div>
+
+                        <div class="h-px bg-gradient-to-r from-[#dc2626] via-[#facc15] to-[#dc2626] mb-8"></div>
+
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-black text-[#facc15]">Daftar Item</h3>
+                            <button type="button" onclick="addProductRow()" class="px-5 py-2.5 bg-[#dc2626] hover:bg-[#facc15] text-black font-bold rounded-lg">+ Tambah</button>
+                        </div>
+
+                        <div class="bg-[#111111]/50 border-2 border-dashed border-[#374151] rounded-xl p-6 mb-6">
+                            <table class="w-full">
+                                <thead class="text-[#facc15] text-xs uppercase border-b border-[#dc2626]">
+                                    <tr><th class="py-3 text-left">Sparepart</th><th class="py-3 text-left">Jumlah</th><th class="py-3 text-right">Hapus</th></tr>
+                                </thead>
+                                <tbody id="product_rows" class="divide-y divide-[#374151]">
+                                    <tr id="row_0">
+                                        <td class="py-4">
+                                            <select name="products[0][id]" class="w-full bg-[#0f0f0f] border border-[#374151] focus:border-[#facc15] rounded-lg py-2 px-3" required>
+                                                <option value="">-- Pilih --</option>
+                                                @foreach($products as $product)
+                                                    <option value="{{ $product->id }}">{{ $product->sku }} - {{ $product->name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </td>
+                                        <td class="py-4"><input type="number" name="products[0][quantity]" min="1" value="1" class="w-full bg-[#0f0f0f] border border-[#374151] focus:border-[#facc15] rounded-lg py-2 px-3" required></td>
+                                        <td class="py-4 text-right"><button type="button" onclick="removeRow(0)" class="text-[#dc2626] hover:text-[#facc15] font-bold">×</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="mb-8">
+                            <label class="block text-sm uppercase text-[#facc15] font-bold mb-2">Catatan</label>
+                            <textarea name="notes" rows="3" class="w-full bg-[#111111] border border-[#374151] focus:border-[#facc15] rounded-lg p-4"></textarea>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button type="submit" class="px-8 py-4 bg-gradient-to-r from-[#dc2626] to-[#facc15] text-black font-black uppercase rounded-lg shadow-lg transition hover:scale-105">
+                                Simpan Transaksi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function toggleType() {
+            const type = document.getElementById('type').value;
+            document.getElementById('supplier_field').classList.toggle('hidden', type !== 'incoming');
+            document.getElementById('customer_field').classList.toggle('hidden', type !== 'outgoing');
+        }
+        toggleType();
+        let rowCount = 1;
+        function addProductRow() {
+            const tbody = document.getElementById('product_rows');
+            const newRow = `...`; // sama seperti sebelumnya
+            tbody.insertAdjacentHTML('beforeend', newRow);
+            rowCount++;
+        }
+        function removeRow(id) {
+            if (document.querySelectorAll('#product_rows tr').length > 1) document.getElementById('row_'+id).remove();
+        }
+    </script>
+</x-app-layout>

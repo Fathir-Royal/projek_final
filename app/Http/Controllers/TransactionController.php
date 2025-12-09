@@ -2,87 +2,109 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Product;
+use App\Models\User;
 use App\Models\Transaction;
-use App\Models\TransactionItem;
-use Illuminate\Support\Facades\Auth;
-
+use App\Services\TransactionService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use App\Http\Requests\StoreTransactionRequest;
+use App\Http\Requests\UpdateTransactionRequest;
 class TransactionController extends Controller
 {
-    // Tampilkan daftar transaksi berdasarkan tipe (in/out)
-    public function index($type)
-    {
-        $transactions = Transaction::where('type', $type)->orderBy('created_at','desc')->get();
-        $products = Product::all();
+    protected $transactionService;
 
-        return view('transactions.index', compact('transactions', 'products', 'type'));
+    public function __construct(TransactionService $transactionService)
+    {
+        $this->transactionService = $transactionService;
+    }
+    public function index(Request $request)
+    {
+        $transactions = $this->transactionService->getTransactionsWithFilters($request);
+        return view('transactions.index', compact('transactions'));
     }
 
-    // Simpan transaksi baru barang masuk/keluar
-    public function store(Request $request, $type)
+    public function create()
     {
-        $request->validate([
-            'items' => 'required|array',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity' => 'required|integer|min:1'
-        ]);
+        $products = Product::orderBy('name')->get();
+        $suppliers = User::where('role', 'supplier')->where('status', 'approved')->orderBy('name')->get();
 
-        // Generate nomor transaksi otomatis
-        $transactionNumber = 'TX-' . strtoupper(uniqid());
-
-        // Insert transaksi utama
-        $tx = Transaction::create([
-            'transaction_number' => $transactionNumber,
-            'type' => $type,
-            'created_by' => Auth::id(),
-            'status' => 'pending',
-            'notes' => $request->notes ?? null
-        ]);
-
-        // Insert item transaksi ke tabel detail
-        foreach ($request->items as $item) {
-            $tx->items()->create([
-                'product_id' => $item['product_id'],
-                'quantity' => $item['quantity']
-            ]);
-        }
-
-        return back()->with('success', 'Transaksi berhasil dibuat dan menunggu persetujuan');
+        return view('transactions.create', compact('products', 'suppliers'));
     }
 
-    // Manager meng-approve transaksi
-    public function approve($id)
+    public function store(StoreTransactionRequest $request)
     {
-        $tx = Transaction::with('items.product')->findOrFail($id);
+        $validated = $request->validated();
+        $validated['transaction_number'] = 'TRX-' . strtoupper(Str::random(10));
 
-        if ($tx->status !== 'pending') {
-            return back()->withErrors(['msg' => 'Transaksi sudah diproses sebelumnya']);
+        try {
+            $this->transactionService->storeTransaction($validated);
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal mencatat transaksi: ' . $e->getMessage())->withInput();
         }
 
-        // Update stok sesuai tipe transaksi
-        foreach ($tx->items as $item) {
-            $product = $item->product;
+        return redirect()->route('transactions.index')
+            ->with('success', 'Transaksi berhasil dicatat & menunggu persetujuan.');
+    }
 
-            if ($tx->type == 'in') {
-                // Barang masuk -> stok bertambah
-                $product->stock_current += $item->quantity;
-            } else {
-                // Barang keluar -> stok berkurang (cek stok cukup)
-                if ($product->stock_current < $item->quantity) {
-                    return back()->withErrors(["msg" => "Stok produk $product->name tidak mencukupi"]);
-                }
-                $product->stock_current -= $item->quantity;
-            }
+    public function show(Transaction $transaction)
+    {
+        $transaction->load(['products', 'supplier', 'creator', 'approver']);
+        return view('transactions.show', compact('transaction'));
+    }
 
-            $product->save();
+    public function edit(Transaction $transaction)
+    {
+        if ($transaction->status !== 'pending') {
+            return redirect()->route('transactions.index')
+                ->with('error', 'Hanya transaksi (Pending) yang dapat diedit.');
         }
 
-        // Update status transaksi menjadi approved
-        $tx->status = 'approved';
-        $tx->approved_by = Auth::id();
-        $tx->save();
+        $products = Product::orderBy('name')->get();
+        $suppliers = User::where('role', 'supplier')->where('status', 'approved')->orderBy('name')->get();
+        $transaction->load('products');
 
-        return back()->with('success', 'Transaksi berhasil disetujui dan stok diperbarui');
+        return view('transactions.edit', compact('transaction', 'products', 'suppliers'));
+    }
+
+    public function update(UpdateTransactionRequest $request, Transaction $transaction)
+    {
+        $validated = $request->validated();
+
+        try {
+            $this->transactionService->updateTransaction($transaction, $validated);
+
+            return redirect()->route('transactions.index')
+                ->with('success', 'Transaksi berhasil diperbarui.');
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal update transaksi: ' . $e->getMessage())->withInput();
+        }
+    }
+    public function destroy(Transaction $transaction)
+    {
+        if ($transaction->status !== 'pending') {
+            return redirect()->route('transactions.index')
+                ->with('error', 'Hanya transaksi (Pending) yang dapat dihapus.');
+        }
+
+        $transaction->products()->detach();
+        $transaction->delete();
+
+        return redirect()->route('transactions.index')
+            ->with('success', 'Transaksi (Pending) berhasil dihapus.');
+    }
+    public function approve(Transaction $transaction)
+    {
+        try {
+            $this->transactionService->approveTransaction($transaction);
+
+            return redirect()->route('transactions.index')
+                ->with('success', 'Transaksi ' . $transaction->transaction_number . ' berhasil disetujui. Stok telah diupdate.');
+
+        } catch (\Exception $e) {
+            return redirect()->route('transactions.index')
+                ->with('error', $e->getMessage());
+        }
     }
 }

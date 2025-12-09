@@ -9,23 +9,21 @@ use Illuminate\Support\Facades\Auth;
 
 class RoleMiddleware
 {
+    /**
+     * Handle an incoming request.
+     *
+     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     */
     public function handle(Request $request, Closure $next, ...$roles): Response
     {
-        $user = Auth::user();
-
-        if (!$user) {
-            return redirect()->route('login');
+        if (!Auth::check()) {
+            return redirect('login');
+        }
+        $userRole = Auth::user()->role;
+        if (in_array($userRole, $roles)) {
+            return $next($request); // Silakan masuk
         }
 
-        if ($user->role === 'supplier' && !$user->is_approved) {
-            Auth::logout();
-            return redirect()->route('login')->withErrors(['Akun supplier belum disetujui admin.']);
-        }
-
-        if (!in_array($user->role, $roles)) {
-            abort(403, 'Akses Ditolak');
-        }
-
-        return $next($request);
+        abort(403, 'Akses Ditolak! Anda tidak memiliki izin untuk masuk ke sini.');
     }
 }

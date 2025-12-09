@@ -1,0 +1,59 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\RestockOrder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use App\Models\User;
+
+class RestockOrderService
+{
+
+    public function createOrder(array $data): RestockOrder
+    {
+        return DB::transaction(function () use ($data) {
+            
+            // 1. Buat header PO
+            $order = RestockOrder::create([
+                'po_number' => $data['po_number'], // Digenerate di controller
+                'order_date' => $data['order_date'],
+                'expected_delivery_date' => $data['expected_delivery_date'] ?? null,
+                'status' => 'pending',
+                'notes' => $data['notes'] ?? null,
+                'supplier_id' => $data['supplier_id'],
+                'created_by_user_id' => Auth::id(), // Manager yang buat
+            ]);
+
+            // 2. Siapkan data Pivot (Isi PO)
+            $pivotData = [];
+            foreach ($data['products'] as $product) {
+                // Format: [product_id => ['quantity' => 10]]
+                $pivotData[$product['id']] = ['quantity' => $product['quantity']];
+            }
+
+            // 3. Simpan ke tabel pivot (product_restock_order)
+            $order->products()->attach($pivotData);
+
+            return $order;
+        });
+    }
+    public function getOrdersByUser(User $user)
+    {
+        $query = RestockOrder::with(['supplier', 'creator']);
+
+        if ($user->role === 'supplier') {
+            $query->where('supplier_id', $user->id);
+        }
+        
+        return $query->latest()->paginate(10);
+    }
+
+    public function updateStatus(RestockOrder $order, string $status): void
+    {
+        $order->update([
+            'status' => $status
+        ]);
+
+    }
+}

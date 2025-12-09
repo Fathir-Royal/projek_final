@@ -19,6 +19,9 @@ return new class extends Migration
             $table->string('password');
             $table->rememberToken();
             $table->timestamps();
+            $table->string("role"); //manager, admin , staff, supplier
+            $table->string("status")->default("pending");//approval suplier
+
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

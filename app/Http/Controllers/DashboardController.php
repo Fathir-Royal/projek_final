@@ -2,64 +2,79 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Transaction;
 use App\Models\RestockOrder;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        $user = auth()->user();
+        $user = Auth::user();
+        $data = [];
 
-        // Data umum untuk semua role
-        $lowStockProducts = Product::whereColumn('stock_current', '<=', 'stock_min')->get();
+        // --- ADMIN & MANAGER ---
+        if ($user->role === 'admin' || $user->role === 'manager') {
+            $data['total_products'] = Product::count();
+            $data['total_value'] = Product::sum(DB::raw('purchase_price * stock_current'));
+            $data['low_stock_count'] = Product::whereColumn('stock_current', '<=', 'stock_minimum')->count();
 
-        // Role admin & manager: full analytics
-        if ($user->role == 'admin' || $user->role == 'manager') {
+            // Total Transaksi Bulan Ini
+            $data['transactions_month'] = Transaction::whereMonth('transaction_date', now()->month)
+                ->whereYear('transaction_date', now()->year)
+                ->count();
 
-            $totalProducts = Product::count();
-            $totalTransactions = Transaction::count();
-            $totalPendingRestock = RestockOrder::where('status','pending')->count();
+            $data['pending_transactions'] = Transaction::where('status', 'pending')->count();
 
-            return view('dashboard', [
-                'user' => $user,
-                'lowStockProducts' => $lowStockProducts,
-                'totalProducts' => $totalProducts,
-                'totalTransactions' => $totalTransactions,
-                'totalPendingRestock' => $totalPendingRestock
-            ]);
+            // Confirmed/Shipped
+            $data['active_restocks'] = RestockOrder::whereIn('status', ['confirmed', 'shipped'])->count();
+
+            $data['low_stock_items'] = Product::whereColumn('stock_current', '<=', 'stock_minimum')
+                ->orderBy('stock_current', 'asc')
+                ->take(5)
+                ->get();
         }
 
-        // Role staff
-        if ($user->role == 'staff') {
-
-            // Hanya melihat transaksi pending
-            $pendingTransactions = Transaction::where('status','pending')->get();
-
-            return view('dashboard', [
-                'user' => $user,
-                'lowStockProducts' => $lowStockProducts,
-                'pendingTransactions' => $pendingTransactions
-            ]);
+        // --- STAFF ---
+        if ($user->role === 'staff') {
+            $data['transactions_today'] = Transaction::where('created_by_user_id', $user->id)
+                ->whereDate('created_at', today())
+                ->count();
+            $data['pending_transactions'] = Transaction::where('created_by_user_id', $user->id)
+                ->where('status', 'pending')
+                ->count();
+            $data['recent_transactions'] = Transaction::where('created_by_user_id', $user->id)
+                ->latest()
+                ->take(5)
+                ->get();
         }
 
-        // Role supplier
-        if ($user->role == 'supplier') {
+        // --- SUPPLIER ---
+        if ($user->role === 'supplier') {
+            $data['pending_po'] = RestockOrder::where('supplier_id', $user->id)
+                ->where('status', 'pending')
+                ->count();
+            $data['completed_po'] = RestockOrder::where('supplier_id', $user->id)
+                ->where('status', 'received')
+                ->count();
+            $data['incoming_orders'] = RestockOrder::where('supplier_id', $user->id)
+                ->where('status', 'pending')
+                ->with('products')
+                ->latest()
+                ->take(5)
+                ->get();
 
-            // Jumlah PO menunggu konfirmasi
-            $pendingPO = RestockOrder::where('supplier_id', $user->id)
-                        ->where('status','pending')
-                        ->count();
-
-            return view('dashboard', [
-                'user' => $user,
-                'pendingPO' => $pendingPO
-            ]);
+            // History
+            $data['delivery_history'] = RestockOrder::where('supplier_id', $user->id)
+                ->where('status', 'received')
+                ->latest()
+                ->take(5)
+                ->get();
         }
 
-        // Default fallback
-        return view('dashboard');
+        return view('dashboard', compact('data'));
     }
 }
